@@ -1,0 +1,7 @@
+"AddonInfo"
+{
+	"ElementTD"
+	{
+		"MaxPlayers"		"8"
+	}
+}

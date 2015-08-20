@@ -1,0 +1,283 @@
+-- Generated from template
+require( "abilities" )
+require( "buildinghelper" )
+require( "timers" )
+require( "physics" )
+require( "teleporters" )
+require( "items" )
+
+if CAddonTemplateGameMode == nil then
+	CAddonTemplateGameMode = class({})
+end
+
+function Precache( context )
+	--[[
+		Precache things we know we'll use.  Possible file types include (but not limited to):
+			PrecacheResource( "model", "*.vmdl", context )
+			PrecacheResource( "soundfile", "*.vsndevts", context )
+			PrecacheResource( "particle", "*.vpcf", context )
+			PrecacheResource( "particle_folder", "particles/folder", context )
+	]]
+		-- Sounds can precached here like anything else
+	PrecacheResource("soundfile", "soundevents/game_sounds_heroes/game_sounds_gyrocopter.vsndevts", context)
+
+	for i=1, 271 do
+		print ("precaching"..UnitsTable[i])
+		PrecacheUnitByNameSync(UnitsTable[i],context)
+	end
+	
+	-- Entire items can be precached by name
+	-- Abilities can also be precached in this way despite the name
+	PrecacheItemByNameSync("example_ability", context)
+	PrecacheItemByNameSync("item_Element_Flame", context)
+	PrecacheItemByNameSync("item_Element_Water", context)
+	PrecacheItemByNameSync("item_Element_Nature", context)
+	PrecacheItemByNameSync("item_Element_Light", context)
+	PrecacheItemByNameSync("item_Element_Dark", context)
+	PrecacheItemByNameSync("item_Element_Earth", context)
+	PrecacheUnitByNameSync("npc_maze_runner", context)
+	PrecacheResource( "particle", "particles/light.vpcf", context )	
+	PrecacheResource( "particle", "particles/dark.vpcf", context )	
+	PrecacheResource( "particle", "particles/flame.vpcf", context )	
+	PrecacheResource( "particle", "particles/earth.vpcf", context )
+	PrecacheResource( "particle", "particles/water.vpcf", context )
+	PrecacheResource( "particle", "particles/units/heroes/hero_jakiro/jakiro_base_attack_fire.vpcf", context )
+	PrecacheResource( "particle", "particles/units/heroes/hero_jakiro/jakiro_liquid_fire_explosion.vpcf", context )
+	PrecacheResource( "particle", "particles/units/heroes/hero_jakiro/jakiro_liquid_fire_debuff.vpcf", context )
+	PrecacheResource( "particle", "particles/units/heroes/hero_nevermore/nevermore_trail.vpcf", context )
+	PrecacheResource( "particle", "particles/generic_gameplay/generic_stunned.vpcf", context )
+	PrecacheResource( "particle", "particles/units/heroes/hero_nevermore/nevermore_base_attack.vpcf", context )
+	PrecacheResource( "particle", "particles/units/heroes/hero_earth_spirit/espirit_rollingboulder.vpcf", context )
+	PrecacheResource( "particle", "particles/units/heroes/hero_ursa/ursa_earthshock.vpcf", context )
+	PrecacheResource( "particle", "particles/units/heroes/hero_viper/viper_poison_attack_.vpcf", context )
+	PrecacheResource( "particle", "particles/units/heroes/hero_viper/viper_poison_debuff.vpcf", context )
+	PrecacheResource( "particle", "particles/units/heroes/hero_morphling/morphling_base_attack.vpcf", context )
+	PrecacheResource( "particle", "particles/units/heroes/hero_phantom_assassin/phantom_assassin_crit_impact.vpcf", context )
+	PrecacheResource( "particle", "particles/units/heroes/hero_razor/razor_loadout.vpcf", context )
+	
+	
+
+	-- Entire heroes (sound effects/voice/models/particles) can be precached with PrecacheUnitByNameSync
+	-- Custom units from npc_units_custom.txt can also have all of their abilities and precache{} blocks precached in this way
+	PrecacheUnitByNameSync("npc_dota_hero_drow_ranger", context)
+	PrecacheUnitByNameSync("EleTDArrow", context)
+	PrecacheUnitByNameSync("EleTDSeige", context)
+	
+	
+
+	PrecacheUnitByNameSync("npc_barracks", context) -- Building that spawns units
+	PrecacheUnitByNameSync("npc_peasant", context) -- Unit that builds and gathers resources
+	PrecacheUnitByNameSync("item_rally", context) -- Flag, should be a clientside particle instead
+	GameRules:SetTimeOfDay( 0.75 )
+	GameRules:SetHeroRespawnEnabled( true )
+	GameRules:SetUseUniversalShopMode( true )
+	GameRules:SetHeroSelectionTime( 5.0 )
+	GameRules:SetPreGameTime( 5.0 )
+	GameRules:SetPostGameTime( 5.0 )
+	GameRules:SetGoldTickTime( 60.0 )
+	GameRules:SetGoldPerTick( 0 )
+	GameRules:SetCustomGameTeamMaxPlayers( DOTA_TEAM_GOODGUYS, 10 )
+	GameRules:SetCustomGameTeamMaxPlayers( DOTA_TEAM_BADGUYS, 0 )
+	GameRules:SetFogOfWarDisabled(true)
+	ALLOW_SAME_HERO_SELECTION = true 
+	CAMERA_DISTANCE_OVERRIDE = 3000
+	DISABLE_FOG_OF_WAR_ENTIRELY = true 
+	ENABLE_TOWER_BACKDOOR_PROTECTION = false
+end
+
+-- Create the game mode when we activate
+function Activate()
+	GameRules.AddonTemplate = CAddonTemplateGameMode()
+	GameRules.AddonTemplate:InitGameMode()
+end
+
+function CAddonTemplateGameMode:InitGameMode()
+	GameRules:GetGameModeEntity():SetThink( "OnThink", self, "GlobalThink", 2 )
+	CustomGameEventManager:RegisterListener( "building_helper_build_command", Dynamic_Wrap(BuildingHelper, "RegisterLeftClick"))
+	CustomGameEventManager:RegisterListener( "building_helper_cancel_command", Dynamic_Wrap(BuildingHelper, "RegisterRightClick"))
+	ListenToGameEvent( "entity_killed", Dynamic_Wrap( CAddonTemplateGameMode, 'OnEntityKilled' ), self )
+	ListenToGameEvent("dota_player_pick_hero", Dynamic_Wrap(CAddonTemplateGameMode, 'On_player_spawn'), self)
+	ListenToGameEvent('npc_spawned', Dynamic_Wrap(CAddonTemplateGameMode, 'OnNPCSpawned'), self)
+	GameRules:GetGameModeEntity():SetThink(SpawnUnits)
+	GameRules:GetGameModeEntity():SetCameraDistanceOverride(3000)
+end
+
+function CAddonTemplateGameMode:OnNPCSpawned(keys)
+  local npc = EntIndexToHScript(keys.entindex)
+  if npc:IsRealHero() then
+    print ("here spawned:"..npc:GetName())
+	local ability = nil
+	  for i=0, npc:GetAbilityCount()-1 do
+		ability = npc:GetAbilityByIndex(i)
+		if ability and not ability:IsAttributeBonus() then 
+		  for level=1, ability:GetMaxLevel() do
+			ability:UpgradeAbility(false) -- SetLevel() ignores OnUpgrade events
+		  end
+		end
+	  end
+	  npc:SetAbilityPoints(0)
+	  npc:SetGold(10,false)
+	  --npc:AddNewModifier(npc,nil,"modifier_batrider_firefly",nil)
+  end
+end
+
+function CAddonTemplateGameMode:On_player_spawn(data)
+	PlayerResource:SetGold(data.player-1,50,false)
+	PlayerElements[data.player] = {0,0,0,0,0,0}
+end
+
+function CAddonTemplateGameMode:OnEntityKilled( event )
+	local player = EntIndexToHScript( event.entindex_attacker):GetPlayerOwnerID()
+	local victim =  EntIndexToHScript( event.entindex_killed):GetPlayerOwnerID()
+	if player == nil or player == victim then return end
+	UnitstoKill[player+1] = UnitstoKill[player+1] -1
+	if UnitstoKill[player+1]==0 then
+		roundState = 0
+		roundStartTime = GameRules:GetGameTime()+15
+		GameRound = GameRound+1
+	end
+end
+-- Evaluate the state of the game
+function CAddonTemplateGameMode:OnThink()
+	if GameRules:State_Get() == DOTA_GAMERULES_STATE_GAME_IN_PROGRESS then
+		if roundState==0 then
+			if not self._entPrepTimeQuest then
+				self._entPrepTimeQuest = SpawnEntityFromTableSynchronous( "quest", { name = "PrepTime", title = "#DOTA_Quest_Holdout_PrepTime" } )
+				self._entPrepTimeQuest:SetTextReplaceValue( QUEST_TEXT_REPLACE_VALUE_ROUND, GameRound )
+			end
+			self._entPrepTimeQuest:SetTextReplaceValue( QUEST_TEXT_REPLACE_VALUE_CURRENT_VALUE, roundStartTime - GameRules:GetGameTime() )
+			--check if end of round time
+			if roundStartTime - GameRules:GetGameTime() <0 then
+				UTIL_RemoveImmediate( self._entPrepTimeQuest )
+				self._entPrepTimeQuest = nil
+				roundState = 1
+				--set up the next round
+				UnitsToSpawn = 20
+				if GameRound % 10 == 0 then  end
+				UnitScale = math.log(GameRound+1)
+				prevRoundUnit = roundUnit
+				roundUnit = UnitsTable[RandomInt(1,271)]
+				UnitBounty = math.ceil(math.log(GameRound+1))
+				UnitMod = ""
+				UnitAbility = ""
+				UnitItem = ""
+				UnitHealth = GameRound*75
+				if roundUnit == prevRoundUnit then roundUnit = UnitsTable[RandomInt(1,271)] end
+				if roundUnit == prevRoundUnit then roundUnit = UnitsTable[RandomInt(1,271)] end
+				print("unit:"..roundUnit)
+				--if GameRound % 5 == 0 then UnitMod = "modifier_brewmaster_drunken_brawler" end --every 5th round has evasion
+				if GameRound % 10 == 0 then 
+					UnitsToSpawn = math.ceil(GameRound/10)
+					UnitHealth = GameRound * 1000
+					UnitScale = UnitScale * 2
+					UnitMS = 300
+					EmitGlobalSound("Music_Frostivus.WraithKing")
+					UnitBounty = math.ceil(math.log(GameRound+1))*20
+					UnitChamp = true
+				end --every 10th round is a Boss round
+				if GameRound % 6 == 0 then UnitHealth = GameRound*100 end --every 6th round is a more health round
+				if GameRound % 7 == 0 then UnitMS = 500 else UnitMS = 400 end --every 7th round is a fast unit round
+				if GameRound % 4 == 0 then UnitST = 0.2 else UnitST = 0.5 end --every 4th round is a clumped round
+				if GameRound % 8 == 0 then UnitRG = GameRound*5 else UnitRG = 0.5 end --every 8th round is a fast regen round
+				if GameRound % 9 == 0 then UnitItem = "item_aegis" end --every 9th round has reincarnation
+				if GameRound % 11 == 0 then UnitMod = "modifier_brewmaster_earth_spell_immunity" end --every 5th round has evasion
+				--if GameRound % 13 == 0 then UnitAbility = "windrunner_windrun" end
+				for i=1,PlayerResource:GetTeamPlayerCount(),1 do 
+					UnitstoKill[i]=UnitsToSpawn
+				end
+				roundState = 1
+				GameRules:GetGameModeEntity():SetThink(SpawnUnits)
+				GameRules:SendCustomMessage("<font color='#FF8888'>Spawning "..UnitsToSpawn.."x </font>"..roundUnit, 0, 0)
+			end
+		end
+		
+	elseif GameRules:State_Get() >= DOTA_GAMERULES_STATE_POST_GAME then
+		return nil
+	end
+	return 1
+end
+
+GameRound = 1
+roundState = 0
+roundStartTime = GameRules:GetGameTime()+5
+UnitsTable = {"npc_xianhe_stork_flying","npc_xianhe_stork","npc_weplay_beaver_flying","npc_weplay_beaver","npc_waldi_the_faithful_flying","npc_waldi_the_faithful","npc_virtus_werebear_t3_flying","npc_virtus_werebear_t3",
+"npc_virtus_werebear_t1_flying","npc_virtus_werebear_t1","npc_vigilante_fox_red_flying","npc_vigilante_fox_red","npc_vigilante_fox_green_flying","npc_vigilante_fox_green","npc_vaal_the_animated_constructradiant_flying",
+"npc_vaal_the_animated_constructradiant","npc_vaal_the_animated_constructdire_flying","npc_vaal_the_animated_constructdire","npc_tory_the_sky_guardian_flying","npc_tory_the_sky_guardian","npc_tinkbot_flying","npc_tinkbot",
+"npc_throe_flying","npc_throe","npc_teron_flying","npc_teron","npc_starladder_grillhound_flying","npc_starladder_grillhound","npc_snapjaw_flying","npc_snapjaw","npc_courier_snail_flying",
+"npc_courier_snail","npc_snaggletooth_red_panda_flying","npc_snaggletooth_red_panda","npc_sltv_10_courier_flying","npc_sltv_10_courier","npc_shroomy_flying","npc_shroomy","npc_shagbark_flying","npc_shagbark",
+"npc_scuttling_scotty_penguin_flying","npc_scuttling_scotty_penguin","npc_scribbinsthescarab_flying","npc_scribbinsthescarab","npc_royal_griffin_cub_flying","npc_royal_griffin_cub","npc_raiq_flying","npc_raiq",
+"npc_raidcall_ems_one_turtle_flying","npc_raidcall_ems_one_turtle","npc_pw_zombie_flying","npc_pw_zombie","npc_pw_ostrich_flying","npc_pw_ostrich","npc_pumpkin_courier_flying","npc_pumpkin_courier",
+"npc_premier_league_wyrmeleon_flying","npc_premier_league_wyrmeleon","npc_nilbog_flying","npc_nilbog","npc_nexon_turtle_15_red_flying","npc_nexon_turtle_15_red","npc_nexon_turtle_07_green_flying","npc_nexon_turtle_07_green",
+"npc_nexon_turtle_01_grey_flying","npc_nexon_turtle_01_grey","npc_mok_flying","npc_mok","npc_mlg_courier_wraith_flying","npc_mlg_courier_wraith","npc_mighty_chicken_flying","npc_mighty_chicken","npc_mei_nei_rabbit_flying",
+"npc_mei_nei_rabbit","npc_livery_llama_courier_flying","npc_livery_llama_courier","npc_lilnova_flying","npc_lilnova","npc_lgd_golden_skipper_flying","npc_lgd_golden_skipper","npc_kupu_courier_flying","npc_kupu_courier",
+"npc_kanyu_shark_flying","npc_kanyu_shark","npc_jumo_dire_flying","npc_jumo_dire","npc_jumo_flying","npc_jumo","npc_jin_yin_white_fox_flying","npc_jin_yin_white_fox","npc_jin_yin_black_fox_flying","npc_jin_yin_black_fox",
+"npc_jilling_ben_courier_flying","npc_jilling_ben_courier","npc_itsy_flying","npc_itsy","npc_ig_dragon_flying","npc_ig_dragon","npc_guardians_of_justice_phoe_flying","npc_guardians_of_justice_phoe",
+"npc_guardians_of_justice_enix_flying","npc_guardians_of_justice_enix","npc_grim_wolf_radiant_flying","npc_grim_wolf_radiant","npc_grim_wolf_flying","npc_grim_wolf","npc_green_jade_dragon_flying","npc_green_jade_dragon",
+"npc_gnomepig_flying","npc_gnomepig","npc_gama_brothers_flying","npc_gama_brothers","npc_g1_courier_flying","npc_g1_courier","npc_fei_lian_blue_flying","npc_fei_lian_blue","npc_faceless_rex_flying","npc_faceless_rex",
+"npc_el_gato_hero_flying","npc_el_gato_hero","npc_el_gato_beyond_the_summit_flying","npc_el_gato_beyond_the_summit","npc_echo_wisp_flying","npc_echo_wisp","npc_duskie_flying","npc_duskie","npc_dokkaebi_nexon_courier_flying",
+"npc_dokkaebi_nexon_courier","npc_defense4_radiant_flying","npc_defense4_radiant","npc_defense4_dire_flying","npc_defense4_dire","npc_deathripper_flying","npc_deathripper","npc_deathbringer_flying","npc_deathbringer",
+"npc_dc_demon_flying","npc_dc_demon","npc_dc_angel_flying","npc_dc_angel","npc_d2l_steambear_flying","npc_d2l_steambear","npc_courier_mvp_redkita_flying","npc_courier_mvp_redkita","npc_courier_janjou_flying",
+"npc_courier_janjou","npc_courier_faun_flying","npc_courier_faun","npc_corsair_ship_flying","npc_corsair_ship","npc_coral_furryfish_flying","npc_coral_furryfish","npc_coco_the_courageous_flying","npc_coco_the_courageous",
+"npc_carty_dire_flying","npc_carty_dire","npc_carty_flying","npc_carty","npc_captain_bamboo_flying","npc_captain_bamboo","npc_butch_pudge_dog_flying","npc_butch_pudge_dog","npc_bucktooth_jerry_flying","npc_bucktooth_jerry",
+"npc_bts_chirpy_flying","npc_bts_chirpy","npc_boooofus_courier_flying","npc_boooofus_courier","npc_bookwyrm_flying","npc_bookwyrm","npc_blue_lightning_horse_flying","npc_blue_lightning_horse","npc_blotto_flying","npc_blotto",
+"npc_billy_bounceback_flying","npc_billy_bounceback","npc_beaverknight_flying","npc_beaverknight","npc_bearzky_flying","npc_bearzky","npc_basim_flying","npc_basim","npc_bajie_pig_flying","npc_bajie_pig","npc_baekho_flying",
+"npc_baekho","npc_babka_bewitcher_blue_flying","npc_babka_bewitcher_blue","npc_babka_bewitcher_flying","npc_babka_bewitcher","npc_azuremircourierfinal_flying","npc_azuremircourierfinal","npc_arneyb_rabbit_flying",
+"npc_arneyb_rabbit","npc_amphibian_kid_flying","npc_amphibian_kid","npc_alphid_of_lecaciida_flying","npc_alphid_of_lecaciida","npc_flying_desolation","npc_turtle_rider_flying","npc_turtle_rider","npc_trapjaw_flying",
+"npc_trapjaw","npc_tegu_flying","npc_tegu","npc_sw_donkey_flying","npc_sw_donkey","npc_stump_flying","npc_stump","npc_stump001_flying","npc_stump001","npc_smeevil_mammoth_flying","npc_smeevil_mammoth",
+"npc_smeevil_magic_carpet_flying","npc_smeevil_magic_carpet","npc_smeevil_crab_flying","npc_smeevil_crab","npc_smeevil_bird_flying","npc_smeevil_bird","npc_smeevil_flying","npc_smeevil","npc_skippy_parrot_flying_sailboat",
+"npc_skippy_parrot_flying","npc_skippy_parrot","npc_sillydragon_flying","npc_sillydragon","npc_ram_flying","npc_ram","npc_otter_dragon_flying","npc_otter_dragon","npc_octopus_flying","npc_octopus","npc_navi_courier_flying",
+"npc_navi_courier","npc_minipudge_flying","npc_minipudge","npc_mechjaw_flying","npc_mechjaw","npc_lockjaw_flying","npc_lockjaw","npc_imp_flying","npc_imp","npc_houndeye_flying","npc_houndeye","npc_gold_greevil_flying",
+"npc_gold_greevil","npc_godhorse_flying","npc_godhorse","npc_frull_courier_flying","npc_frog_flying","npc_frog","npc_f2p_courier_flying","npc_f2p_courier","npc_drodo_flying","npc_drodo","npc_doom_demihero_courier_flying",
+"npc_doom_demihero_courier","npc_donkey_unicorn_flying","npc_donkey_unicorn","npc_donkey_crummy_wizard_2014_flying","npc_donkey_crummy_wizard_2014","npc_defense3_sheep_flying","npc_defense3_sheep","npc_courier_mech_flying",
+"npc_courier_mech","npc_courier_badger_flying","npc_courier_badger","npc_baby_winter_wyvern_flying","npc_baby_winter_wyvern","npc_babyroshan_flying","npc_babyroshan"
+}
+roundUnit = UnitsTable[2]
+prevRoundUnit = UnitsTable[3]
+UnitsToSpawn = 0
+UnitScale = 0.9
+UnitST = 0.5
+UnitMS = 400
+UnitHealth = 100
+UnitRG = 0.5
+UnitBounty = 1
+UnitMod = ""
+UnitAbility = ""
+UnitItem = ""
+UnitChamp = false
+UnitstoKill = {}
+PlayerElements = {}
+PlayerLives = {}
+
+function SpawnUnits ()
+	if GameRules:State_Get() == DOTA_GAMERULES_STATE_GAME_IN_PROGRESS and roundState == 1 then
+		if UnitsToSpawn > 0 then
+		
+			for i=1,PlayerResource:GetTeamPlayerCount(),1 do 
+				local spawner =  Entities:FindByName(nil,"p"..i.."Spawner")
+				local entUnit = CreateUnitByName( roundUnit, spawner:GetAbsOrigin(), false, nil, nil, DOTA_TEAM_BADGUYS )
+				entUnit:AddNewModifier(nil,nil,"modifier_item_phase_boots_active",nil)
+				entUnit:SetInitialGoalEntity( Entities:FindByName(nil,"p1Pathstart"))
+				entUnit:SetModelScale(UnitScale)
+				entUnit:SetBaseMaxHealth(UnitHealth)
+				entUnit:SetBaseMoveSpeed(UnitMS)
+				entUnit:SetBaseHealthRegen(UnitRG)
+				entUnit:SetMaximumGoldBounty(UnitBounty)
+				entUnit:SetMinimumGoldBounty(UnitBounty)
+				entUnit:SetBaseMagicalResistanceValue(math.ceil(math.log(GameRound+1)))
+				entUnit:SetPhysicalArmorBaseValue(math.ceil(math.log(GameRound+1)))
+				if UnitMod ~= "" then entUnit:AddNewModifier(nil,nil,UnitMod,nil) end
+				if UnitItem ~= "" then entUnit:AddItemByName(UnitItem) end
+				if UnitAbility ~= "" then 
+					entUnit:AddAbility(UnitAbility)
+					entUnit:GetAbilityByIndex(1):UpgradeAbility(true)
+					entUnit:SetMana(500)
+				end
+				if string.match(roundUnit, "flying") then entUnit:SetMoveCapability(2) else entUnit:SetMoveCapability(1) end
+				UnitsToSpawn = UnitsToSpawn - 1
+			end
+		else
+			roundState = 2
+		end
+	end
+   return UnitST
+ end
