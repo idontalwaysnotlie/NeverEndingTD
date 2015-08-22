@@ -24,19 +24,35 @@ function OnStartTouch(trigger)
 		print("players cant go through the portal silly")
 		return 
 	end
-	print (trigger.caller:GetName())
+	--print (trigger.caller:GetName())
 	local inspect = require('inspect')
 	local point  = Entities:FindByName( nil, trigger.caller:GetName() .."exit")
 	FindClearSpaceForUnit(trigger.activator, point:GetAbsOrigin(), false)
 	trigger.activator:SetInitialGoalEntity( Entities:FindByName(nil,trigger.caller:GetName().."WP"))
 	trigger.activator:Stop()
-	local player = "Player "..string.char(string.byte(trigger.caller:GetName(),2))
-	GameRules:SendCustomMessage("<font color='#FF8888'>You have lost a life</font> please dont do that "..player, 0, 0)
+	if trigger.activator:GetHealth()<0 then trigger.activator:RemoveSelf() else
+		print(trigger.activator:GetHealth())
+		local player = tonumber(string.char(string.byte(trigger.caller:GetName(),2)))
+		local player2 = PlayerResource:GetPlayer(player-1)
+		player2.lives = player2.lives-1
+		if player2.lives == 0 then --kill off the player
+			GameRules:SendCustomMessage("<font color='#FF8888'>Player "..player.." has Died!!!</font>", 0, 0) 
+			PlayerResource:SetGold(player-1,0,false)
+			PlayerResource:SetCustomBuybackCooldown(player-1,999999)
+			PlayerResource:SetCustomBuybackCost(player-1,999999)
+			player2:GetAssignedHero():ForceKill(false)
+			player2:GetAssignedHero():GetAbilityByIndex(0):SetActivated(false)
+			player2:GetAssignedHero():GetAbilityByIndex(1):SetActivated(false)
+		end
+		if player2.lives > 0 then GameRules:SendCustomMessage("<font color='#FF8888'>Player "..player.." has lost a life!</font> they have "..player2.lives.." left", 0, 0) end
+		if player2.lives < 1 then trigger.activator:ForceKill(false) end
+	end 
+	
 end
  
 function OnEndTouch(trigger)
  
-	print(trigger.activator)
-	print(trigger.caller)
+	--print(trigger.activator)
+	--print(trigger.caller)
  
 end

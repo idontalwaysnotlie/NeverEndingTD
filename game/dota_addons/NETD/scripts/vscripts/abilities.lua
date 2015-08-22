@@ -3,9 +3,8 @@
 function testme (keys)
 	if keys.split_shot_projectile then SplitShotLaunch(keys) else SplitShotDamage(keys) end
 end
-function ChainLightning( event )
-	print("called")
-	ChainLightning(event)
+function ChainLightning( keys )
+	ChainLightning2(keys)
 end
 
 function build( keys )
@@ -50,7 +49,7 @@ function build( keys )
         -- Give building its abilities
         -- add the mana
         unit:SetMana(unit:GetMaxMana())
-		unit:setBuildingCost(goldCost)
+		--unit:setBuildingCost(goldCost)
 		
     end)
 
@@ -87,12 +86,11 @@ end
 function sell(keys)
 	local caster = keys.caster  
 	local pp = PlayerResource:GetPlayer(caster:GetMainControllingPlayer())
-	if pp ~= nil then 
-		pp.activeBuilder:SetGold(pp.activeBuilder:GetGold()+caster:getBuildingCost(),false)
+	if pp and caster.GoldCost then 
+		pp.activeBuilder:SetGold(pp.activeBuilder:GetGold()+caster.GoldCost,false)
 	end
-	if caster ~= nil then 
-		caster:RemoveBuilding(true)
-		caster:destroy()
+	if caster then 
+		BuildingHelper:RemoveBuilding(caster, true)
 	end
 end
 
@@ -103,12 +101,15 @@ end
 function Upgrade(keys)
 	local caster = keys.caster 
 	caster:Purge(true,true,true,true,true)
+	caster:RemoveEffects(1)
+	caster:RemoveEffects(0)
+	caster:RemoveEffects(-1)
     local pID = caster:GetMainControllingPlayer()
 	local player = PlayerResource:GetPlayer(pID)
     local ability = keys.ability
 	local BuildingCost = keys.ability:GetGoldCost(-1)
 	if keys.NoElements then BuildingCost = BuildingCost/2 end
-	caster:setBuildingCost(caster:getBuildingCost()+BuildingCost)
+	caster.GoldCost = caster.GoldCost + BuildingCost
 	if keys.ChangeScale ~= nil then
 		caster:SetModelScale(keys.ChangeScale)
 		print ("Scale changed")
@@ -210,7 +211,6 @@ end
 
 
 function SplitShotLaunch( keys )
-	print("split shot called")
 	local caster = keys.caster
 	local caster_location = caster:GetAbsOrigin()
 	local ability = keys.ability
@@ -247,19 +247,16 @@ function SplitShotLaunch( keys )
 				bReplaceExisting = false,
 				bProvidesVision = false
 			}
-			print("creating projectile")
 			ProjectileManager:CreateTrackingProjectile(projectile_info)
 			max_targets = max_targets - 1
 		end
 		-- If we reached the maximum amount of targets then break the loop
 		if max_targets == 0 then break end
 	end
-	print("splitshot end")
 end
 
 -- Apply the auto attack damage to the hit unit
 function SplitShotDamage( keys )
-	print("split shot landed")
 	local caster = keys.caster
 	local target = keys.target
 	local ability = keys.ability
@@ -271,12 +268,9 @@ function SplitShotDamage( keys )
 	damage_table.damage_type = ability:GetAbilityDamageType()
 	damage_table.damage = caster:GetAttackDamage()
 	ApplyDamage(damage_table)
-	print (ability:GetAbilityDamageType())
-	print (target:GetHealth())
 end
 
 function ChainLightning2( event )
-	print("chain called")
 	local hero = event.caster
 	local target = event.target
 	local ability = event.ability
@@ -315,9 +309,6 @@ function ChainLightning2( event )
 			-- particle and dummy to start the chain
 			targetVec = target:GetAbsOrigin()
 			targetVec.z = target:GetAbsOrigin().z + target:GetBoundingMaxs().z
-			if dummy ~= nil then
-				dummy:RemoveSelf()
-			end
 			dummy = CreateUnitByName("dummy_unit", targetVec, false, hero, hero, hero:GetTeam())
 
 			-- Track the possible targets to bounce from the units in radius
@@ -339,19 +330,18 @@ function ChainLightning2( event )
 				    v.struckByChain = false
 				    v = nil
 				end
-			    print("End Chain, no more targets")
+				dummy:RemoveSelf()
 				return	
 			end
 
 
 			local lightningChain = ParticleManager:CreateParticle("particles/items_fx/chain_lightning.vpcf", PATTACH_WORLDORIGIN, dummy)
 			ParticleManager:SetParticleControl(lightningChain,0,Vector(dummy:GetAbsOrigin().x,dummy:GetAbsOrigin().y,dummy:GetAbsOrigin().z + dummy:GetBoundingMaxs().z ))	
-			
+			dummy:RemoveSelf()
 			-- damage and decay
 			damage = damage - (damage*decay)
 			ApplyDamage({ victim = target, attacker = hero, damage = damage, damage_type = DAMAGE_TYPE_MAGICAL })
 			PopupDamage(target,math.floor(damage))
-			print("Bounce "..bounces.." Hit Unit "..target:GetEntityIndex().. " for "..damage.." damage")
 
 			-- play the sound
 			EmitSoundOn("Hero_Zuus.ArcLightning.Target",target)
@@ -370,7 +360,6 @@ function ChainLightning2( event )
 				   	v.struckByChain = false
 				   	v = nil
 				end
-				print("End Chain, no more bounces")
 			end
 		end
 	})

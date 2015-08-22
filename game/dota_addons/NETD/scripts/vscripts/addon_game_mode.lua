@@ -1,11 +1,16 @@
 -- Generated from template
 require( "abilities" )
-require( "buildinghelper" )
-require( "timers" )
 require( "physics" )
 require( "teleporters" )
 require( "items" )
-
+require('utilities')
+require('upgrades')
+require('builder')
+require('buildinghelper')
+require('libraries/timers')
+require('libraries/popups')
+require('libraries/notifications')
+require('mechanics')
 if CAddonTemplateGameMode == nil then
 	CAddonTemplateGameMode = class({})
 end
@@ -21,7 +26,7 @@ function Precache( context )
 		-- Sounds can precached here like anything else
 	PrecacheResource("soundfile", "soundevents/game_sounds_heroes/game_sounds_gyrocopter.vsndevts", context)
 
-	for i=1, 271 do
+	for i=1, 268 do
 		print ("precaching"..UnitsTable[i])
 		PrecacheUnitByNameSync(UnitsTable[i],context)
 	end
@@ -36,11 +41,13 @@ function Precache( context )
 	PrecacheItemByNameSync("item_Element_Dark", context)
 	PrecacheItemByNameSync("item_Element_Earth", context)
 	PrecacheUnitByNameSync("npc_maze_runner", context)
+	PrecacheUnitByNameSync("npc_maze_runner", context)
 	PrecacheResource( "particle", "particles/light.vpcf", context )	
 	PrecacheResource( "particle", "particles/dark.vpcf", context )	
 	PrecacheResource( "particle", "particles/flame.vpcf", context )	
-	PrecacheResource( "particle", "particles/earth.vpcf", context )
+	PrecacheResource( "particle", "particles/earth2.vpcf", context )
 	PrecacheResource( "particle", "particles/water.vpcf", context )
+	PrecacheResource( "particle", "particles/electric2.vpcf", context )
 	PrecacheResource( "particle", "particles/units/heroes/hero_jakiro/jakiro_base_attack_fire.vpcf", context )
 	PrecacheResource( "particle", "particles/units/heroes/hero_jakiro/jakiro_liquid_fire_explosion.vpcf", context )
 	PrecacheResource( "particle", "particles/units/heroes/hero_jakiro/jakiro_liquid_fire_debuff.vpcf", context )
@@ -54,7 +61,22 @@ function Precache( context )
 	PrecacheResource( "particle", "particles/units/heroes/hero_morphling/morphling_base_attack.vpcf", context )
 	PrecacheResource( "particle", "particles/units/heroes/hero_phantom_assassin/phantom_assassin_crit_impact.vpcf", context )
 	PrecacheResource( "particle", "particles/units/heroes/hero_razor/razor_loadout.vpcf", context )
+	PrecacheResource( "particle", "particles/items_fx/chain_lightning.vpcf", context )
 	
+	PrecacheResource("particle_folder", "particles/buildinghelper", context)
+	PrecacheResource("particle_folder", "particles/econ/items/earthshaker/earthshaker_gravelmaw/", context)
+
+	-- Resources used
+	PrecacheUnitByNameSync("peasant", context)
+	PrecacheUnitByNameSync("tower", context)
+	PrecacheUnitByNameSync("tower_tier2", context)
+	PrecacheUnitByNameSync("city_center", context)
+	PrecacheUnitByNameSync("city_center_tier2", context)
+	PrecacheUnitByNameSync("tech_center", context)
+	PrecacheUnitByNameSync("dragon_tower", context)
+	PrecacheUnitByNameSync("dark_tower", context)
+
+	PrecacheItemByNameSync("item_apply_modifiers", context)
 	
 
 	-- Entire heroes (sound effects/voice/models/particles) can be precached with PrecacheUnitByNameSync
@@ -72,13 +94,18 @@ function Precache( context )
 	GameRules:SetHeroRespawnEnabled( true )
 	GameRules:SetUseUniversalShopMode( true )
 	GameRules:SetHeroSelectionTime( 5.0 )
+	GameRules:SetSameHeroSelectionEnabled( true )
 	GameRules:SetPreGameTime( 5.0 )
 	GameRules:SetPostGameTime( 5.0 )
 	GameRules:SetGoldTickTime( 60.0 )
 	GameRules:SetGoldPerTick( 0 )
-	GameRules:SetCustomGameTeamMaxPlayers( DOTA_TEAM_GOODGUYS, 10 )
+	GameRules:SetCustomGameTeamMaxPlayers( DOTA_TEAM_GOODGUYS, 8 )
 	GameRules:SetCustomGameTeamMaxPlayers( DOTA_TEAM_BADGUYS, 0 )
-	GameRules:SetFogOfWarDisabled(true)
+	GameRules.AbilityKV = LoadKeyValues("scripts/npc/npc_abilities_custom.txt")
+  	GameRules.UnitKV = LoadKeyValues("scripts/npc/npc_units_custom.txt")
+  	GameRules.HeroKV = LoadKeyValues("scripts/npc/npc_heroes_custom.txt")
+  	GameRules.ItemKV = LoadKeyValues("scripts/npc/npc_items_custom.txt")
+  	GameRules.Requirements = LoadKeyValues("scripts/kv/tech_tree.kv")
 	ALLOW_SAME_HERO_SELECTION = true 
 	CAMERA_DISTANCE_OVERRIDE = 3000
 	DISABLE_FOG_OF_WAR_ENTIRELY = true 
@@ -93,13 +120,17 @@ end
 
 function CAddonTemplateGameMode:InitGameMode()
 	GameRules:GetGameModeEntity():SetThink( "OnThink", self, "GlobalThink", 2 )
-	CustomGameEventManager:RegisterListener( "building_helper_build_command", Dynamic_Wrap(BuildingHelper, "RegisterLeftClick"))
-	CustomGameEventManager:RegisterListener( "building_helper_cancel_command", Dynamic_Wrap(BuildingHelper, "RegisterRightClick"))
+	CustomGameEventManager:RegisterListener( "building_helper_build_command", Dynamic_Wrap(BuildingHelper, "BuildCommand"))
+	CustomGameEventManager:RegisterListener( "building_helper_cancel_command", Dynamic_Wrap(BuildingHelper, "CancelCommand"))
+	CustomGameEventManager:RegisterListener( "update_selected_entities", Dynamic_Wrap(CAddonTemplateGameMode, 'OnPlayerSelectedEntities'))
+   	CustomGameEventManager:RegisterListener( "repair_order", Dynamic_Wrap(CAddonTemplateGameMode, "RepairOrder"))  	
 	ListenToGameEvent( "entity_killed", Dynamic_Wrap( CAddonTemplateGameMode, 'OnEntityKilled' ), self )
 	ListenToGameEvent("dota_player_pick_hero", Dynamic_Wrap(CAddonTemplateGameMode, 'On_player_spawn'), self)
 	ListenToGameEvent('npc_spawned', Dynamic_Wrap(CAddonTemplateGameMode, 'OnNPCSpawned'), self)
+	ListenToGameEvent('dota_player_pick_hero', Dynamic_Wrap(CAddonTemplateGameMode, 'OnPlayerPickHero'), self)
 	GameRules:GetGameModeEntity():SetThink(SpawnUnits)
 	GameRules:GetGameModeEntity():SetCameraDistanceOverride(3000)
+	GameRules.SELECTED_UNITS = {}
 end
 
 function CAddonTemplateGameMode:OnNPCSpawned(keys)
@@ -116,13 +147,55 @@ function CAddonTemplateGameMode:OnNPCSpawned(keys)
 		end
 	  end
 	  npc:SetAbilityPoints(0)
-	  npc:SetGold(10,false)
+	  npc:SetGold(50,false)
 	  --npc:AddNewModifier(npc,nil,"modifier_batrider_firefly",nil)
   end
 end
 
+function CAddonTemplateGameMode:OnPlayerSelectedEntities( event )
+	local pID = event.pID
+
+	GameRules.SELECTED_UNITS[pID] = event.selected_entities
+
+	-- This is for Building Helper to know which is the currently active builder
+	local mainSelected = GetMainSelectedEntity(pID)
+	if IsValidEntity(mainSelected) and IsBuilder(mainSelected) then
+		local player = PlayerResource:GetPlayer(pID)
+		player.activeBuilder = mainSelected
+	end
+end
+
+function CAddonTemplateGameMode:OnPlayerPickHero(keys)
+
+	local hero = EntIndexToHScript(keys.heroindex)
+	local player = EntIndexToHScript(keys.player)
+	local playerID = hero:GetPlayerID()
+	print("Player "..playerID.." has spawned")
+	-- Initialize Variables for Tracking
+	player.units = {} -- This keeps the handle of all the units of the player, to iterate for unlocking upgrades
+	player.structures = {} -- This keeps the handle of the constructed units, to iterate for unlocking upgrades
+	player.buildings = {} -- This keeps the name and quantity of each building
+	player.upgrades = {} -- This kees the name of all the upgrades researched
+	player.lumber = 99999 -- Secondary resource of the player
+	player.lives = 50
+
+	CheckAbilityRequirements( hero, player )
+
+	-- Add the hero to the player units list
+	table.insert(player.units, hero)
+	hero.state = "idle" --Builder state
+
+	-- Spawn some peasants around the hero
+	local position = hero:GetAbsOrigin()
+	local HeroLocation  =  Entities:FindByName(nil,"Player"..(playerID+1).."HeroSpawn")
+	if HeroLocation then 
+		hero:SetRespawnPosition(HeroLocation:GetOrigin())
+		hero:SetOrigin(HeroLocation:GetOrigin())
+	end
+end
+
 function CAddonTemplateGameMode:On_player_spawn(data)
-	PlayerResource:SetGold(data.player-1,50,false)
+	--PlayerResource:SetGold(data.player-1,50,false)
 	PlayerElements[data.player] = {0,0,0,0,0,0}
 end
 
@@ -135,6 +208,63 @@ function CAddonTemplateGameMode:OnEntityKilled( event )
 		roundState = 0
 		roundStartTime = GameRules:GetGameTime()+15
 		GameRound = GameRound+1
+	end
+	
+		-- The Unit that was Killed
+	local killedUnit = EntIndexToHScript(event.entindex_killed)
+	-- The Killing entity
+	local killerEntity
+	if event.entindex_attacker then
+		killerEntity = EntIndexToHScript(event.entindex_attacker)
+	end
+
+	-- Player owner of the unit
+	local player = killedUnit:GetPlayerOwner()
+
+	-- Building Killed
+	if IsCustomBuilding(killedUnit) then
+
+		 -- Building Helper grid cleanup
+		BuildingHelper:RemoveBuilding(killedUnit, true)
+
+		-- Check units for downgrades
+		local building_name = killedUnit:GetUnitName()
+				
+		-- Substract 1 to the player building tracking table for that name
+		if player.buildings[building_name] then
+			player.buildings[building_name] = player.buildings[building_name] - 1
+		end
+
+		-- possible unit downgrades
+		for k,units in pairs(player.units) do
+		    CheckAbilityRequirements( units, player )
+		end
+
+		-- possible structure downgrades
+		for k,structure in pairs(player.structures) do
+			CheckAbilityRequirements( structure, player )
+		end
+	end
+
+	-- Table cleanup
+	if player then
+		-- Remake the tables
+		local table_structures = {}
+		for _,building in pairs(player.structures) do
+			if building and IsValidEntity(building) and building:IsAlive() then
+				--print("Valid building: "..building:GetUnitName())
+				table.insert(table_structures, building)
+			end
+		end
+		player.structures = table_structures
+		
+		local table_units = {}
+		for _,unit in pairs(player.units) do
+			if unit and IsValidEntity(unit) then
+				table.insert(table_units, unit)
+			end
+		end
+		player.units = table_units		
 	end
 end
 -- Evaluate the state of the game
@@ -154,35 +284,38 @@ function CAddonTemplateGameMode:OnThink()
 				--set up the next round
 				UnitsToSpawn = 20
 				if GameRound % 10 == 0 then  end
-				UnitScale = math.log(GameRound+1)
+				UnitScale = math.log(GameRound/5+1)+0.3
 				prevRoundUnit = roundUnit
-				roundUnit = UnitsTable[RandomInt(1,271)]
+				roundUnit = UnitsTable[RandomInt(1,270)]
 				UnitBounty = math.ceil(math.log(GameRound+1))
 				UnitMod = ""
 				UnitAbility = ""
 				UnitItem = ""
-				UnitHealth = GameRound*75
-				if roundUnit == prevRoundUnit then roundUnit = UnitsTable[RandomInt(1,271)] end
-				if roundUnit == prevRoundUnit then roundUnit = UnitsTable[RandomInt(1,271)] end
+				UnitHealth = (GameRound*150) + math.ceil(math.pow(GameRound*10,1.3))
+				print("Unit Health")
+				print(UnitHealth)
+				if roundUnit == prevRoundUnit then roundUnit = UnitsTable[RandomInt(1,268)] end
+				if roundUnit == prevRoundUnit then roundUnit = UnitsTable[RandomInt(1,268)] end
 				print("unit:"..roundUnit)
-				--if GameRound % 5 == 0 then UnitMod = "modifier_brewmaster_drunken_brawler" end --every 5th round has evasion
+				--if GameRound % 5 == 0 then UnitMod = "modifier_brewmaster_drunken_brawler" GameRules:SendCustomMessage("<font color='#6600CC'>Evasion Round! </font>", 0, 0) end --every 5th round has evasion
 				if GameRound % 10 == 0 then 
 					UnitsToSpawn = math.ceil(GameRound/10)
-					UnitHealth = GameRound * 1000
+					UnitHealth = UnitHealth*10
 					UnitScale = UnitScale * 2
 					UnitMS = 300
 					EmitGlobalSound("Music_Frostivus.WraithKing")
 					UnitBounty = math.ceil(math.log(GameRound+1))*20
 					UnitChamp = true
+					GameRules:SendCustomMessage("<font color='#6600CC'>Boss Round! </font>", 0, 0)
 				end --every 10th round is a Boss round
-				if GameRound % 6 == 0 then UnitHealth = GameRound*100 end --every 6th round is a more health round
-				if GameRound % 7 == 0 then UnitMS = 500 else UnitMS = 400 end --every 7th round is a fast unit round
-				if GameRound % 4 == 0 then UnitST = 0.2 else UnitST = 0.5 end --every 4th round is a clumped round
-				if GameRound % 8 == 0 then UnitRG = GameRound*5 else UnitRG = 0.5 end --every 8th round is a fast regen round
+				if GameRound % 6 == 0 then UnitHealth = GameRound*300 GameRules:SendCustomMessage("<font color='#6600CC'>High HP Round! </font>", 0, 0) end --every 6th round is a more health round
+				if GameRound % 7 == 0 then UnitMS = 500 GameRules:SendCustomMessage("<font color='#6600CC'>Fast Round! </font>", 0, 0) else UnitMS = 400 end --every 7th round is a fast unit round
+				if GameRound % 4 == 0 then UnitST = 0.2 GameRules:SendCustomMessage("<font color='#6600CC'>Pack Round! </font>", 0, 0) else UnitST = 0.5 end --every 4th round is a clumped round
+				if GameRound % 8 == 0 then UnitRG = GameRound*5 GameRules:SendCustomMessage("<font color='#6600CC'>Regen Round! </font>", 0, 0) else UnitRG = 0.5 end --every 8th round is a fast regen round
 				if GameRound % 9 == 0 then UnitItem = "item_aegis" end --every 9th round has reincarnation
-				if GameRound % 11 == 0 then UnitMod = "modifier_brewmaster_earth_spell_immunity" end --every 5th round has evasion
+				if GameRound % 11 == 0 then UnitMod2 = "modifier_brewmaster_earth_spell_immunity" GameRules:SendCustomMessage("<font color='#6600CC'>Magic Immune Round! </font>", 0, 0) end --every 11th has magic immune
 				--if GameRound % 13 == 0 then UnitAbility = "windrunner_windrun" end
-				for i=1,PlayerResource:GetTeamPlayerCount(),1 do 
+				for i=1,PlayerResource:GetPlayerCount(),1 do 
 					UnitstoKill[i]=UnitsToSpawn
 				end
 				roundState = 1
@@ -200,7 +333,7 @@ end
 GameRound = 1
 roundState = 0
 roundStartTime = GameRules:GetGameTime()+5
-UnitsTable = {"npc_xianhe_stork_flying","npc_xianhe_stork","npc_weplay_beaver_flying","npc_weplay_beaver","npc_waldi_the_faithful_flying","npc_waldi_the_faithful","npc_virtus_werebear_t3_flying","npc_virtus_werebear_t3",
+UnitsTable = {"npc_weplay_beaver_flying","npc_weplay_beaver","npc_waldi_the_faithful_flying","npc_waldi_the_faithful","npc_virtus_werebear_t3_flying","npc_virtus_werebear_t3",
 "npc_virtus_werebear_t1_flying","npc_virtus_werebear_t1","npc_vigilante_fox_red_flying","npc_vigilante_fox_red","npc_vigilante_fox_green_flying","npc_vigilante_fox_green","npc_vaal_the_animated_constructradiant_flying",
 "npc_vaal_the_animated_constructradiant","npc_vaal_the_animated_constructdire_flying","npc_vaal_the_animated_constructdire","npc_tory_the_sky_guardian_flying","npc_tory_the_sky_guardian","npc_tinkbot_flying","npc_tinkbot",
 "npc_throe_flying","npc_throe","npc_teron_flying","npc_teron","npc_starladder_grillhound_flying","npc_starladder_grillhound","npc_snapjaw_flying","npc_snapjaw","npc_courier_snail_flying",
@@ -226,7 +359,7 @@ UnitsTable = {"npc_xianhe_stork_flying","npc_xianhe_stork","npc_weplay_beaver_fl
 "npc_trapjaw","npc_tegu_flying","npc_tegu","npc_sw_donkey_flying","npc_sw_donkey","npc_stump_flying","npc_stump","npc_stump001_flying","npc_stump001","npc_smeevil_mammoth_flying","npc_smeevil_mammoth",
 "npc_smeevil_magic_carpet_flying","npc_smeevil_magic_carpet","npc_smeevil_crab_flying","npc_smeevil_crab","npc_smeevil_bird_flying","npc_smeevil_bird","npc_smeevil_flying","npc_smeevil","npc_skippy_parrot_flying_sailboat",
 "npc_skippy_parrot_flying","npc_skippy_parrot","npc_sillydragon_flying","npc_sillydragon","npc_ram_flying","npc_ram","npc_otter_dragon_flying","npc_otter_dragon","npc_octopus_flying","npc_octopus","npc_navi_courier_flying",
-"npc_navi_courier","npc_minipudge_flying","npc_minipudge","npc_mechjaw_flying","npc_mechjaw","npc_lockjaw_flying","npc_lockjaw","npc_imp_flying","npc_imp","npc_houndeye_flying","npc_houndeye","npc_gold_greevil_flying",
+"npc_navi_courier","npc_minipudge_flying","npc_minipudge","npc_mechjaw_flying","npc_mechjaw","npc_lockjaw_flying","npc_lockjaw","npc_imp_flying","npc_houndeye_flying","npc_houndeye","npc_gold_greevil_flying",
 "npc_gold_greevil","npc_godhorse_flying","npc_godhorse","npc_frull_courier_flying","npc_frog_flying","npc_frog","npc_f2p_courier_flying","npc_f2p_courier","npc_drodo_flying","npc_drodo","npc_doom_demihero_courier_flying",
 "npc_doom_demihero_courier","npc_donkey_unicorn_flying","npc_donkey_unicorn","npc_donkey_crummy_wizard_2014_flying","npc_donkey_crummy_wizard_2014","npc_defense3_sheep_flying","npc_defense3_sheep","npc_courier_mech_flying",
 "npc_courier_mech","npc_courier_badger_flying","npc_courier_badger","npc_baby_winter_wyvern_flying","npc_baby_winter_wyvern","npc_babyroshan_flying","npc_babyroshan"
@@ -241,40 +374,43 @@ UnitHealth = 100
 UnitRG = 0.5
 UnitBounty = 1
 UnitMod = ""
+UnitMod2 = ""
 UnitAbility = ""
 UnitItem = ""
 UnitChamp = false
 UnitstoKill = {}
 PlayerElements = {}
-PlayerLives = {}
 
 function SpawnUnits ()
 	if GameRules:State_Get() == DOTA_GAMERULES_STATE_GAME_IN_PROGRESS and roundState == 1 then
 		if UnitsToSpawn > 0 then
-		
-			for i=1,PlayerResource:GetTeamPlayerCount(),1 do 
+			for i=1,PlayerResource:GetPlayerCount(),1 do 
 				local spawner =  Entities:FindByName(nil,"p"..i.."Spawner")
-				local entUnit = CreateUnitByName( roundUnit, spawner:GetAbsOrigin(), false, nil, nil, DOTA_TEAM_BADGUYS )
-				entUnit:AddNewModifier(nil,nil,"modifier_item_phase_boots_active",nil)
-				entUnit:SetInitialGoalEntity( Entities:FindByName(nil,"p1Pathstart"))
-				entUnit:SetModelScale(UnitScale)
-				entUnit:SetBaseMaxHealth(UnitHealth)
-				entUnit:SetBaseMoveSpeed(UnitMS)
-				entUnit:SetBaseHealthRegen(UnitRG)
-				entUnit:SetMaximumGoldBounty(UnitBounty)
-				entUnit:SetMinimumGoldBounty(UnitBounty)
-				entUnit:SetBaseMagicalResistanceValue(math.ceil(math.log(GameRound+1)))
-				entUnit:SetPhysicalArmorBaseValue(math.ceil(math.log(GameRound+1)))
-				if UnitMod ~= "" then entUnit:AddNewModifier(nil,nil,UnitMod,nil) end
-				if UnitItem ~= "" then entUnit:AddItemByName(UnitItem) end
-				if UnitAbility ~= "" then 
-					entUnit:AddAbility(UnitAbility)
-					entUnit:GetAbilityByIndex(1):UpgradeAbility(true)
-					entUnit:SetMana(500)
+				if PlayerResource:GetPlayer(i-1).lives and PlayerResource:GetPlayer(i-1).lives > 0 then 
+					local entUnit = CreateUnitByName( roundUnit, spawner:GetAbsOrigin(), false, nil, nil, DOTA_TEAM_BADGUYS )
+					if not entUnit then print("error loading unit") print(roundUnit) end
+					entUnit:AddNewModifier(nil,nil,"modifier_item_phase_boots_active",nil)
+					entUnit:SetInitialGoalEntity( Entities:FindByName(nil,"p"..i.."Pathstart"))
+					entUnit:SetModelScale(UnitScale)
+					entUnit:SetBaseMaxHealth(UnitHealth)
+					entUnit:SetBaseMoveSpeed(UnitMS)
+					entUnit:SetBaseHealthRegen(UnitRG)
+					entUnit:SetMaximumGoldBounty(UnitBounty)
+					entUnit:SetMinimumGoldBounty(UnitBounty)
+					entUnit:SetBaseMagicalResistanceValue(math.ceil(math.log(GameRound+1)))
+					entUnit:SetPhysicalArmorBaseValue(math.ceil(math.log(GameRound+1)))
+					if UnitMod ~= "" then entUnit:AddNewModifier(nil,nil,UnitMod,nil) end
+					if UnitMod2 ~= "" then entUnit:AddNewModifier(nil,nil,UnitMod2,nil) end
+					if UnitItem ~= "" then entUnit:AddItemByName(UnitItem) end
+					if UnitAbility ~= "" then 
+						entUnit:AddAbility(UnitAbility)
+						entUnit:GetAbilityByIndex(1):UpgradeAbility(true)
+						entUnit:SetMana(500)
+					end
+					if string.match(roundUnit, "flying") then entUnit:SetMoveCapability(2) else entUnit:SetMoveCapability(1) end
 				end
-				if string.match(roundUnit, "flying") then entUnit:SetMoveCapability(2) else entUnit:SetMoveCapability(1) end
-				UnitsToSpawn = UnitsToSpawn - 1
 			end
+			UnitsToSpawn = UnitsToSpawn - 1
 		else
 			roundState = 2
 		end
