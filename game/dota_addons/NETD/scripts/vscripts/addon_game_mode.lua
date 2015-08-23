@@ -24,7 +24,7 @@ function Precache( context )
 			PrecacheResource( "particle_folder", "particles/folder", context )
 	]]
 		-- Sounds can precached here like anything else
-	PrecacheResource("soundfile", "soundevents/game_sounds_heroes/game_sounds_gyrocopter.vsndevts", context)
+	PrecacheResource("soundfile", "soundevents/game_sounds_custom.vsndevts", context)
 
 	for i=1, 268 do
 		print ("precaching"..UnitsTable[i])
@@ -33,7 +33,6 @@ function Precache( context )
 	
 	-- Entire items can be precached by name
 	-- Abilities can also be precached in this way despite the name
-	PrecacheItemByNameSync("example_ability", context)
 	PrecacheItemByNameSync("item_Element_Flame", context)
 	PrecacheItemByNameSync("item_Element_Water", context)
 	PrecacheItemByNameSync("item_Element_Nature", context)
@@ -48,6 +47,8 @@ function Precache( context )
 	PrecacheResource( "particle", "particles/earth2.vpcf", context )
 	PrecacheResource( "particle", "particles/water.vpcf", context )
 	PrecacheResource( "particle", "particles/electric2.vpcf", context )
+	PrecacheResource( "particle", "particles/nature.vpcf", context )
+	PrecacheResource( "particle", "particles/lava.vpcf", context )
 	PrecacheResource( "particle", "particles/units/heroes/hero_jakiro/jakiro_base_attack_fire.vpcf", context )
 	PrecacheResource( "particle", "particles/units/heroes/hero_jakiro/jakiro_liquid_fire_explosion.vpcf", context )
 	PrecacheResource( "particle", "particles/units/heroes/hero_jakiro/jakiro_liquid_fire_debuff.vpcf", context )
@@ -62,6 +63,44 @@ function Precache( context )
 	PrecacheResource( "particle", "particles/units/heroes/hero_phantom_assassin/phantom_assassin_crit_impact.vpcf", context )
 	PrecacheResource( "particle", "particles/units/heroes/hero_razor/razor_loadout.vpcf", context )
 	PrecacheResource( "particle", "particles/items_fx/chain_lightning.vpcf", context )
+	PrecacheResource( "particle", "particles/units/heroes/hero_bane/bane_fiends_grip.vpcf", context )
+	PrecacheResource( "particle", "particles/units/heroes/hero_alchemist/alchemist_acid_spray_debuff.vpcf", context )
+	PrecacheResource( "particle", "particles/ui/dark_swirl_smoke.vpcf", context )
+	PrecacheResource( "particle", "particles/units/heroes/hero_pugna/pugna_life_give.vpcf", context )
+	PrecacheResource( "particle", "particles/units/unit_greevil/greevil_blackhole.vpcf", context )
+	PrecacheResource( "particle", "particles/units/heroes/hero_jakiro/jakiro_macropyre_lava_a.vpcf", context )
+	PrecacheResource( "particle", "particles/econ/items/crystal_maiden/crystal_maiden_cowl_of_ice/maiden_crystal_nova_cowlofice.vpcf", context )
+	PrecacheResource( "particle", "particles/units/heroes/hero_crystalmaiden/maiden_frostbite_buff.vpcf", context )
+	PrecacheResource( "particle", "particles/econ/events/coal/coal_projectile.vpcf", context )
+	PrecacheResource( "particle", "particles/econ/items/crystal_maiden/crystal_maiden_maiden_of_icewrack/maiden_arcana_ground_ambient.vpcf", context )
+	PrecacheResource( "particle", "particles/units/heroes/hero_alchemist/alchemist_acid_spray.vpcf", context )
+	PrecacheResource( "particle", "particles/econ/generic/generic_buff_1/generic_buff_1.vpcf", context )
+	PrecacheResource( "particle", "particles/units/heroes/hero_dark_seer/dark_seer_surge_flame.vpcf", context )
+	PrecacheResource( "particle", "particles/units/heroes/hero_ember_spirit/ember_spirit_flameguard.vpcf", context )
+	PrecacheResource( "particle", "particles/units/heroes/hero_sandking/sandking_caustic_finale_explode_c_lv.vpcf", context )
+	PrecacheResource( "particle", "particles/econ/items/crystal_maiden/crystal_maiden_maiden_of_icewrack/maiden_freezing_field_explosion_arcana1.vpcf", context )
+	PrecacheResource( "particle", "particles/units/heroes/hero_crystalmaiden/maiden_base_attack.vpcf", context )
+	
+	
+	PrecacheResource( "model", "models/props_structures/bad_ancient_destruction.vmdl", context )
+	PrecacheResource( "model", "models/props_structures/tower_good2.vmdl", context )
+	PrecacheResource( "model", "models/props_structures/radiant_tower001.vmdl", context )
+	PrecacheResource( "model", "models/props_structures/tower_bad.vmdl", context )
+	PrecacheResource( "model", "models/props_structures/bad_tower_destruction.vmdl", context )
+	PrecacheResource( "model", "models/props_structures/good_statue008.vmdl", context )
+	PrecacheResource( "model", "models/props_structures/bad_statue003.vmdl", context )
+	PrecacheResource( "model", "models/heroes/phantom_assassin/arcana_tombstone.vmdl", context )
+	PrecacheResource( "model", "models/props_structures/good_statue010_dest_lvl3.vmdl", context )
+	PrecacheResource( "model", "models/props_structures/tower_dragon_white.vmdl", context )
+	PrecacheResource( "model", "models/heroes/pedestal/effigy_pedestal_ti5_lv2.vmdl", context )
+	PrecacheResource( "model", "models/props_garden/bad_stonewallstatue001.vmdl", context )
+	PrecacheResource( "model", "models/props_structures/statue_eel001.vmdl", context )
+	PrecacheResource( "model", "models/props_structures/gryphon_statue001.vmdl", context )
+	PrecacheResource( "model", "models/props_structures/statue_mystical001.vmdl", context )
+	PrecacheResource( "model", "models/props_structures/statue_cuttlefish001.vmdl", context )
+	PrecacheResource( "model", "models/items/furion/treant/treant_cis/treant_cis.vmdl", context )
+	PrecacheResource( "model", "models/items/earth_spirit/demon_stone_summon/demon_stone_summon.vmdl", context )
+	
 	
 	PrecacheResource("particle_folder", "particles/buildinghelper", context)
 	PrecacheResource("particle_folder", "particles/econ/items/earthshaker/earthshaker_gravelmaw/", context)
@@ -84,6 +123,7 @@ function Precache( context )
 	PrecacheUnitByNameSync("npc_dota_hero_drow_ranger", context)
 	PrecacheUnitByNameSync("EleTDArrow", context)
 	PrecacheUnitByNameSync("EleTDSeige", context)
+	PrecacheUnitByNameSync("dummy_unit", context)
 	
 	
 
@@ -202,6 +242,7 @@ end
 function CAddonTemplateGameMode:OnEntityKilled( event )
 	local player = EntIndexToHScript( event.entindex_attacker):GetPlayerOwnerID()
 	local victim =  EntIndexToHScript( event.entindex_killed):GetPlayerOwnerID()
+	
 	if player == nil or player == victim then return end
 	UnitstoKill[player+1] = UnitstoKill[player+1] -1
 	if UnitstoKill[player+1]==0 then
@@ -209,6 +250,7 @@ function CAddonTemplateGameMode:OnEntityKilled( event )
 		roundStartTime = GameRules:GetGameTime()+15
 		GameRound = GameRound+1
 	end
+	if EntIndexToHScript( event.entindex_attacker):GetUnitName() == "LifeTower" then PlayerResource:GetPlayer(player).lives = PlayerResource:GetPlayer(player).lives +1 end
 	
 		-- The Unit that was Killed
 	local killedUnit = EntIndexToHScript(event.entindex_killed)
@@ -278,6 +320,7 @@ function CAddonTemplateGameMode:OnThink()
 			self._entPrepTimeQuest:SetTextReplaceValue( QUEST_TEXT_REPLACE_VALUE_CURRENT_VALUE, roundStartTime - GameRules:GetGameTime() )
 			--check if end of round time
 			if roundStartTime - GameRules:GetGameTime() <0 then
+				GameRules.nextRound  = 0
 				UTIL_RemoveImmediate( self._entPrepTimeQuest )
 				self._entPrepTimeQuest = nil
 				roundState = 1
@@ -286,18 +329,19 @@ function CAddonTemplateGameMode:OnThink()
 				if GameRound % 10 == 0 then  end
 				UnitScale = math.log(GameRound/5+1)+0.3
 				prevRoundUnit = roundUnit
-				roundUnit = UnitsTable[RandomInt(1,270)]
+				roundUnit = UnitsTable[RandomInt(1,268)]
 				UnitBounty = math.ceil(math.log(GameRound+1))
 				UnitMod = ""
+				UnitMod2 = ""
 				UnitAbility = ""
 				UnitItem = ""
-				UnitHealth = (GameRound*150) + math.ceil(math.pow(GameRound*10,1.3))
+				UnitHealth = (GameRound*150) + math.ceil(math.pow(GameRound*10,1.5))
 				print("Unit Health")
 				print(UnitHealth)
 				if roundUnit == prevRoundUnit then roundUnit = UnitsTable[RandomInt(1,268)] end
 				if roundUnit == prevRoundUnit then roundUnit = UnitsTable[RandomInt(1,268)] end
 				print("unit:"..roundUnit)
-				--if GameRound % 5 == 0 then UnitMod = "modifier_brewmaster_drunken_brawler" GameRules:SendCustomMessage("<font color='#6600CC'>Evasion Round! </font>", 0, 0) end --every 5th round has evasion
+				--if GameRound % 5 == 0 then UnitMod = "modifier_brewmaster_drunken_brawler" GameRules:SendCustomMessage("<font color='#8855EE'>Evasion Round! </font>", 0, 0) end --every 5th round has evasion
 				if GameRound % 10 == 0 then 
 					UnitsToSpawn = math.ceil(GameRound/10)
 					UnitHealth = UnitHealth*10
@@ -306,14 +350,14 @@ function CAddonTemplateGameMode:OnThink()
 					EmitGlobalSound("Music_Frostivus.WraithKing")
 					UnitBounty = math.ceil(math.log(GameRound+1))*20
 					UnitChamp = true
-					GameRules:SendCustomMessage("<font color='#6600CC'>Boss Round! </font>", 0, 0)
+					GameRules:SendCustomMessage("<font color='#8855EE'>Boss Round! </font>", 0, 0)
 				end --every 10th round is a Boss round
-				if GameRound % 6 == 0 then UnitHealth = GameRound*300 GameRules:SendCustomMessage("<font color='#6600CC'>High HP Round! </font>", 0, 0) end --every 6th round is a more health round
-				if GameRound % 7 == 0 then UnitMS = 500 GameRules:SendCustomMessage("<font color='#6600CC'>Fast Round! </font>", 0, 0) else UnitMS = 400 end --every 7th round is a fast unit round
-				if GameRound % 4 == 0 then UnitST = 0.2 GameRules:SendCustomMessage("<font color='#6600CC'>Pack Round! </font>", 0, 0) else UnitST = 0.5 end --every 4th round is a clumped round
-				if GameRound % 8 == 0 then UnitRG = GameRound*5 GameRules:SendCustomMessage("<font color='#6600CC'>Regen Round! </font>", 0, 0) else UnitRG = 0.5 end --every 8th round is a fast regen round
+				if GameRound % 6 == 0 then UnitHealth = GameRound*300 GameRules:SendCustomMessage("<font color='#8855EE'>High HP Round! </font>", 0, 0) end --every 6th round is a more health round
+				if GameRound % 7 == 0 then UnitMS = 500 GameRules:SendCustomMessage("<font color='#8855EE'>Fast Round! </font>", 0, 0) else UnitMS = 400 end --every 7th round is a fast unit round
+				if GameRound % 4 == 0 then UnitST = 0.2 GameRules:SendCustomMessage("<font color='#8855EE'>Pack Round! </font>", 0, 0) else UnitST = 0.5 end --every 4th round is a clumped round
+				if GameRound % 8 == 0 then UnitRG = GameRound*5 GameRules:SendCustomMessage("<font color='#8855EE'>Regen Round! </font>", 0, 0) else UnitRG = 0.5 end --every 8th round is a fast regen round
 				if GameRound % 9 == 0 then UnitItem = "item_aegis" end --every 9th round has reincarnation
-				if GameRound % 11 == 0 then UnitMod2 = "modifier_brewmaster_earth_spell_immunity" GameRules:SendCustomMessage("<font color='#6600CC'>Magic Immune Round! </font>", 0, 0) end --every 11th has magic immune
+				if GameRound % 11 == 0 then UnitMod2 = "modifier_brewmaster_earth_spell_immunity" GameRules:SendCustomMessage("<font color='#8855EE'>Magic Immune Round! </font>", 0, 0) UnitHealth = UnitHealth/2 end --every 11th has magic immune
 				--if GameRound % 13 == 0 then UnitAbility = "windrunner_windrun" end
 				for i=1,PlayerResource:GetPlayerCount(),1 do 
 					UnitstoKill[i]=UnitsToSpawn
@@ -327,12 +371,16 @@ function CAddonTemplateGameMode:OnThink()
 	elseif GameRules:State_Get() >= DOTA_GAMERULES_STATE_POST_GAME then
 		return nil
 	end
+	if GameRules.nextRound == PlayerResource:GetPlayerCount() then 
+		GameRules:SendCustomMessage("<font color='#CC33FF'>Moving onto next round</font>", 0, 0) 
+		roundState = 0
+		roundStartTime = GameRules:GetGameTime()+2
+		GameRound = GameRound+1
+		GameRules.nextRound = 0
+	end
 	return 1
 end
 
-GameRound = 1
-roundState = 0
-roundStartTime = GameRules:GetGameTime()+5
 UnitsTable = {"npc_weplay_beaver_flying","npc_weplay_beaver","npc_waldi_the_faithful_flying","npc_waldi_the_faithful","npc_virtus_werebear_t3_flying","npc_virtus_werebear_t3",
 "npc_virtus_werebear_t1_flying","npc_virtus_werebear_t1","npc_vigilante_fox_red_flying","npc_vigilante_fox_red","npc_vigilante_fox_green_flying","npc_vigilante_fox_green","npc_vaal_the_animated_constructradiant_flying",
 "npc_vaal_the_animated_constructradiant","npc_vaal_the_animated_constructdire_flying","npc_vaal_the_animated_constructdire","npc_tory_the_sky_guardian_flying","npc_tory_the_sky_guardian","npc_tinkbot_flying","npc_tinkbot",
@@ -364,6 +412,9 @@ UnitsTable = {"npc_weplay_beaver_flying","npc_weplay_beaver","npc_waldi_the_fait
 "npc_doom_demihero_courier","npc_donkey_unicorn_flying","npc_donkey_unicorn","npc_donkey_crummy_wizard_2014_flying","npc_donkey_crummy_wizard_2014","npc_defense3_sheep_flying","npc_defense3_sheep","npc_courier_mech_flying",
 "npc_courier_mech","npc_courier_badger_flying","npc_courier_badger","npc_baby_winter_wyvern_flying","npc_baby_winter_wyvern","npc_babyroshan_flying","npc_babyroshan"
 }
+GameRound = 1
+roundState = 0
+roundStartTime = GameRules:GetGameTime()+10
 roundUnit = UnitsTable[2]
 prevRoundUnit = UnitsTable[3]
 UnitsToSpawn = 0
@@ -407,6 +458,7 @@ function SpawnUnits ()
 						entUnit:GetAbilityByIndex(1):UpgradeAbility(true)
 						entUnit:SetMana(500)
 					end
+					if GameRound %10 == 0 then entUnit.boss = true end
 					if string.match(roundUnit, "flying") then entUnit:SetMoveCapability(2) else entUnit:SetMoveCapability(1) end
 				end
 			end

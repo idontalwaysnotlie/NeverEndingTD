@@ -1,87 +1,7 @@
 -- The following three functions are necessary for building helper.
 
-function testme (keys)
-	if keys.split_shot_projectile then SplitShotLaunch(keys) else SplitShotDamage(keys) end
-end
-function ChainLightning( keys )
-	ChainLightning2(keys)
-end
 
-function build( keys )
-    local player = keys.caster:GetPlayerOwner()
-    local pID = player:GetPlayerID()
-    local ability = keys.ability
-	
-	
 
-    -- We don't want to charge the player resources at this point
-    -- This is only relevent for abilities that use AbilityGoldCost
-    local goldCost = keys.ability:GetGoldCost(-1)
-    PlayerResource:ModifyGold(pID, goldCost, false, 7) 
-    ability:EndCooldown()
-	
-
-    BuildingHelper:AddBuilding(keys)
-
-    keys:OnBuildingPosChosen(function(vPos)
-        --print("OnBuildingPosChosen")
-        -- in WC3 some build sound was played here.
-    end)
-
-    keys:OnPreConstruction(function ()
-        -- Use this function to check/modify player resources before the construction begins
-        -- Return false to abort the build. It cause OnConstructionFailed to be called
-        if PlayerResource:GetGold(pID) < goldCost then
-            return false
-        end
-
-        PlayerResource:ModifyGold(pID, -1 * goldCost, false, 7)
-    end)
-
-    keys:OnConstructionStarted(function(unit)
-        -- This runs as soon as the building is created
-        FindClearSpaceForUnit(keys.caster, keys.caster:GetAbsOrigin(), true)
-        ability:StartCooldown(ability:GetCooldown(-1))
-
-    end)
-    keys:OnConstructionCompleted(function(unit)
-        -- Play construction complete sound.
-        -- Give building its abilities
-        -- add the mana
-        unit:SetMana(unit:GetMaxMana())
-		--unit:setBuildingCost(goldCost)
-		
-    end)
-
-    -- These callbacks will only fire when the state between below half health/above half health changes.
-    -- i.e. it won't unnecessarily fire multiple times.
-    keys:OnBelowHalfHealth(function(unit)
-    end)
-
-    keys:OnAboveHalfHealth(function(unit)
-
-    end)
-
-    keys:OnConstructionFailed(function( building )
-        -- This runs when a building cannot be placed, you should refund resources if any. building is the unit that would've been built.
-    end)
-
-    keys:OnConstructionCancelled(function( building )
-        -- This runs when a building is cancelled, building is the unit that would've been built.
-    end)
-
-    -- Have a fire effect when the building goes below 50% health.
-    -- It will turn off it building goes above 50% health again.
-    keys:EnableFireEffect("modifier_jakiro_liquid_fire_burn")
-end
-
-function building_canceled( keys )
-    BuildingHelper:CancelBuilding(keys)
-end
-
-function create_building_entity( keys )
-    BuildingHelper:InitializeBuildingEntity(keys)
-end
 
 function sell(keys)
 	local caster = keys.caster  
@@ -100,20 +20,14 @@ end
 
 function Upgrade(keys)
 	local caster = keys.caster 
-	caster:Purge(true,true,true,true,true)
-	caster:RemoveEffects(1)
-	caster:RemoveEffects(0)
-	caster:RemoveEffects(-1)
+	caster:RemoveModifierByName("OverheadEffect")
+	caster:RemoveModifierByName("PassiveEffect")
     local pID = caster:GetMainControllingPlayer()
 	local player = PlayerResource:GetPlayer(pID)
     local ability = keys.ability
 	local BuildingCost = keys.ability:GetGoldCost(-1)
 	if keys.NoElements then BuildingCost = BuildingCost/2 end
 	caster.GoldCost = caster.GoldCost + BuildingCost
-	if keys.ChangeScale ~= nil then
-		caster:SetModelScale(keys.ChangeScale)
-		print ("Scale changed")
-	end
 	if keys.BonusDamage ~= nil then
 		caster:SetBaseDamageMax(caster:GetBaseDamageMax() + keys.BonusDamage)
 		caster:SetBaseDamageMin(caster:GetBaseDamageMin() + keys.BonusDamage)
@@ -143,8 +57,18 @@ function Upgrade(keys)
 		print ("Abiltiy4 changed")
 	end 
 	if keys.changeModel ~= nil then
-		caster:setModel(keys.changeModel)
-		print ("model updated")
+		print("changing model to:"..keys.changeModel)
+		
+		caster:SetOriginalModel(keys.changeModel)
+		caster:SetModel(keys.changeModel)
+		print ("model changed")
+	end
+	if keys.ChangeScale ~= nil then
+		caster:SetModelScale(keys.ChangeScale)
+		print ("Scale changed")
+	end
+	if keys.ChangeName ~= nil then
+		caster:SetUnitName(keys.ChangeName)
 	end
 	if caster:GetAbilityByIndex(0) ~= nil then caster:GetAbilityByIndex(0):UpgradeAbility(true) end
 	if caster:GetAbilityByIndex(1) ~= nil then caster:GetAbilityByIndex(1):UpgradeAbility(true) end
@@ -270,7 +194,12 @@ function SplitShotDamage( keys )
 	ApplyDamage(damage_table)
 end
 
-function ChainLightning2( event )
+function VoteNext ( keys )
+	GameRules:SendCustomMessage("<font color='#CC33FF'>Player "..keys.caster:GetMainControllingPlayer().." has called for next round.</font>", 0, 0) 
+	GameRules.nextRound  = GameRules.nextRound + 1
+end
+
+function ChainLightning( event )
 	local hero = event.caster
 	local target = event.target
 	local ability = event.ability
@@ -310,7 +239,6 @@ function ChainLightning2( event )
 			targetVec = target:GetAbsOrigin()
 			targetVec.z = target:GetAbsOrigin().z + target:GetBoundingMaxs().z
 			dummy = CreateUnitByName("dummy_unit", targetVec, false, hero, hero, hero:GetTeam())
-
 			-- Track the possible targets to bounce from the units in radius
 			local possibleTargetsBounce = {}
 			for _,v in pairs(units) do
@@ -377,5 +305,6 @@ function instaKill ( keys )
 		damage_table.damage_type = DAMAGE_TYPE_PURE
 		damage_table.damage = 9999999
 		ApplyDamage(damage_table)
+		print("intakilled")
 	end
 end 

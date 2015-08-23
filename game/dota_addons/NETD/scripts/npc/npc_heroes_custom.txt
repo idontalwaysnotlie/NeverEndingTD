@@ -13,8 +13,8 @@
 		"override_hero"			"npc_dota_hero_drow_ranger"
 		"Ability1"				"build_arrow_tower"
 		"Ability2"				"build_seige_tower"
-		"Ability3"				""
-		"Ability4"				""
+		"Ability3"				"BuilderInvunrability"
+		"Ability4"				"VoteNext"
 		"VisionNighttimeRange"		"3000"									// Range of vision at night time.
 		"AttackCapabilities"		"DOTA_UNIT_CAP_NO_ATTACK"
 		"AttackDamageMin"			"0"

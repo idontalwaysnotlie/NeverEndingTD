@@ -27,7 +27,7 @@ function Build( event )
 	-- Checks if there is enough custom resources to start the building, else stop.
 	local unit_table = UnitKV[building_name]
 	local build_time = ability:GetSpecialValueFor("build_time")
-	local gold_cost = ability:GetSpecialValueFor("gold_cost")
+	local gold_cost = ability:GetGoldCost(-1)
 	local lumber_cost = ability:GetSpecialValueFor("lumber_cost")
 
 	local hero = caster:GetPlayerOwner():GetAssignedHero()
@@ -47,7 +47,25 @@ function Build( event )
 
 	-- Additional checks to confirm a valid building position can be performed here
 	event:OnPreConstruction(function(vPos)
-
+		--check if build on lane
+		if vPos.z ~= 128 then
+       		SendErrorMessage(caster:GetPlayerOwnerID(), "Please dont build on the lane")
+			return false
+		end
+		--check if built on onother persons lane
+		if (caster:GetPlayerOwnerID() == 0 and (vPos.x<3904 or vPos.y>-3840)) or 
+			(caster:GetPlayerOwnerID() == 1 and (vPos.x<-1728 or vPos.x>2300  or vPos.y>-3840)) or 
+			(caster:GetPlayerOwnerID() == 2 and (vPos.x>-2728  or vPos.y>3840)) or 
+			(caster:GetPlayerOwnerID() == 3 and (vPos.x>-2800 or vPos.y<-2450 or vPos.y>2150)) or 
+			(caster:GetPlayerOwnerID() == 4 and (vPos.x<2800 or vPos.y<-2450 or vPos.y>2150)) or 
+			(caster:GetPlayerOwnerID() == 5 and (vPos.x<3000 or vPos.y<3400)) or 
+			(caster:GetPlayerOwnerID() == 6 and (vPos.x>2360 or vPos.x<-2650 or vPos.y<3400)) or 
+			(caster:GetPlayerOwnerID() == 7 and (vPos.x>-3000 or vPos.y<3400)) 
+		then 
+			SendErrorMessage(caster:GetPlayerOwnerID(), "Please only build in your lane")
+			return false
+		end
+	
        	-- Blight check
        	if string.match(building_name, "undead") and building_name ~= "undead_necropolis" then
        		local bHasBlight = HasBlight(vPos)
@@ -60,7 +78,7 @@ function Build( event )
 
        	-- If not enough resources to queue, stop
        	if not PlayerHasEnoughGold( player, lumber_cost ) then
-       		SendErrorMessage(caster:GetPlayerOwnerID(), "#error_not_enough_gold")
+       		SendErrorMessage(caster:GetPlayerOwnerID(), "Not Enough Gold")
 			return false
 		end
 
@@ -75,6 +93,7 @@ function Build( event )
 	-- Position for a building was confirmed and valid
     event:OnBuildingPosChosen(function(vPos)
 		
+		
     	-- Spend resources
     	hero:ModifyGold(-gold_cost, false, 0)
     	ModifyLumber( player, -lumber_cost)
@@ -83,15 +102,13 @@ function Build( event )
     	EmitSoundOnClient("DOTA_Item.ObserverWard.Activate", player)
 
     	-- Move the units away from the building place
-	
-
 	end)
 
     -- The construction failed and was never confirmed due to the gridnav being blocked in the attempted area
 	event:OnConstructionFailed(function()
 		local name = player.activeBuilding
 		DebugPrint("[BH] Failed placement of " .. name)
-		SendErrorMessage(caster:GetPlayerOwnerID(), "#error_invalid_build_position")
+		SendErrorMessage(caster:GetPlayerOwnerID(), "Invalid Build Location")
 	end)
 
 	-- Cancelled due to ClearQueue
@@ -117,8 +134,8 @@ function Build( event )
 	    unit.LumberCost = gold_cost
 	    unit.BuildTime = lumber_cost
 		-- Give item to cancel
-		local item = CreateItem("item_building_cancel", playersHero, playersHero)
-		unit:AddItem(item)
+		--local item = CreateItem("item_building_cancel", playersHero, playersHero)
+		--unit:AddItem(item)
 
 		-- FindClearSpace for the builder
 		FindClearSpaceForUnit(caster, caster:GetAbsOrigin(), true)

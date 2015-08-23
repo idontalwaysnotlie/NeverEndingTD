@@ -1,6 +1,6 @@
 "AddonInfo"
 {
-	"ElementTD"
+	"Never Ending TD"
 	{
 		"MaxPlayers"		"8"
 	}

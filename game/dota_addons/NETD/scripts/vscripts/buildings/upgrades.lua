@@ -13,7 +13,7 @@ function UpgradeBuilding( event )
 	-- Keep the gridnav blockers and orientation
 	local blockers = caster.blockers
 	local angle = caster:GetAngles()
-
+	print("upgrade was called????")
     -- New building
 	local building = BuildingHelper:PlaceBuilding(player, new_unit, position, false, 0)
 	building.blockers = blockers

@@ -414,8 +414,7 @@ function BuildingHelper:StartBuilding( keys )
     building.state = "building"
 
 	building.ACost = building.GoldCost
-	print("Building2 "..building:GetName())
-	print(building.ACost)
+
     Timers:CreateTimer(
         function() 
             building:SetAbsOrigin(location)
@@ -1013,6 +1012,7 @@ function BuildingHelper:AdvanceQueue(builder)
         end
         local abil = builder:FindAbilityByName(abilName)
         abil:SetLevel(1)
+		--abil:SetHidden(true)
 
         Timers:CreateTimer(function()
             builder:CastAbilityOnPosition(location, abil, 0)
